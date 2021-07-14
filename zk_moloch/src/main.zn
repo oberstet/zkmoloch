@@ -13,9 +13,49 @@ use std::collections::MTreeMap;
 mod constants;
 use self::constants::N;
 use self::constants::AMOUNT_10_18;
+use self::constants::AMOUNT_0;
 
 type Address = u160;
+type AddressPair = (Address, Address);
+
+pub const ADDRESS_0: u160 = 0;
+
 type Balance = u248;
+
+struct Member {
+    delegateKey: Address,   // the key responsible for submitting proposals and voting - defaults to member address unless updated
+    shares: u248,           // the # of voting shares assigned to this member
+    loot: u248,             // the loot amount available to this member (combined with shares on ragequit)
+    exists: bool,           // always true once a member has been created
+    highestIndexYesVote: u248, // highest proposal index # on which the member voted YES
+    jailed: u248,           // set to proposalIndex of a passing guild kick proposal for this member, prevents voting on and sponsoring proposals
+}
+
+struct Proposal {
+    applicant: Address,     // the applicant who wishes to become a member - this key will be used for withdrawals (doubles as guild kick target for gkick proposals)
+    proposer: Address,      // the account that submitted the proposal (can be non-member)
+    sponsor: Address,       // the member that sponsored the proposal (moving it into the queue)
+    sharesRequested: u248,  // the # of shares the applicant is requesting
+    lootRequested: u248,    // the amount of loot the applicant is requesting
+    tributeOffered: u248,   // amount of tokens offered as tribute
+    tributeToken: Address,  // tribute token contract reference
+    paymentRequested: u248, // amount of tokens requested as payment
+    paymentToken: Address,  // payment token contract reference
+    startingPeriod: u248,   // the period in which voting can start for this proposal
+    yesVotes: u248,         // the total number of YES votes for this proposal
+    noVotes: u248,          // the total number of NO votes for this proposal
+
+    // FIXME
+    // bool[6] flags;          // [sponsored, processed, didPass, cancelled, whitelist, guildkick]
+
+    // FIXME
+    // string details;         // proposal details - could be IPFS hash, plaintext, or JSON
+
+    maxTotalSharesAndLootAtYesVote: u248,   // the maximum # of total shares encountered at a yes vote on this proposal
+
+    // FIXME
+    // mapping(address => Vote) votesByMember; // the votes on this proposal by each member
+}
 
 
 contract ZkMoloch {
@@ -39,6 +79,26 @@ contract ZkMoloch {
     const MAX_GRACE_PERIOD_LENGTH: u248 = AMOUNT_10_18;         // maximum length of grace period
     const MAX_DILUTION_BOUND: u248 = AMOUNT_10_18;              // maximum dilution bound
     const MAX_NUMBER_OF_SHARES_AND_LOOT: u248 = AMOUNT_10_18;   // maximum number of shares that can be minted
+
+    // INTERNAL ACCOUNTING
+    pub proposalCount: u248;    // total proposals submitted
+    pub totalShares: u248;      // total shares across all members
+    pub totalLoot: u248;        // total loot across all members
+
+    pub const GUILD: Address = 0xdead;
+    pub const ESCROW: Address = 0xbeef;
+
+    // this does not work: "error[0037]: type `structure MTreeMap` cannot be instantiated beyond the contract storage"
+    // pub userTokenBalances: MTreeMap<Address, MTreeMap<Address, u248>>;
+
+    // this works (credit: @tshabs)
+    pub userTokenBalances: MTreeMap<AddressPair, u248>;
+
+    // mapping(address => Member) public members;
+    pub members: MTreeMap<Address, Member>;
+
+    // mapping(address => address) public memberAddressByDelegateKey;
+    pub memberAddressByDelegateKey: MTreeMap<Address, Address>;
 
     pub fn new(_summoner: Address,
                _approvedTokens: [Address; N],
@@ -70,19 +130,39 @@ contract ZkMoloch {
             depositToken: _approvedTokens[0],
             approvedTokens: _approvedTokens,
             tokenWhitelist: MTreeMap,
+            proposalCount: AMOUNT_0,
+            totalShares: AMOUNT_0,
+            totalLoot: AMOUNT_0,
+            userTokenBalances: MTreeMap,
+            members: MTreeMap,
+            memberAddressByDelegateKey: MTreeMap,
         };
-
-/*
-        // the code below runs into:
-        // "thread '<unnamed>' panicked at 'Value always exists'"
-        // https://gist.github.com/oberstet/ffe1ebd78d587e349b93c092c902819f
 
         for i in 0..N {
             if (_approvedTokens[i] != 0) {
-                require(!obj.tokenWhitelist.get(_approvedTokens[i]), "duplicate approved token");
+                require(_approvedTokens[i] != 0, "_approvedToken cannot be 0");
+
+                // this runs into "thread '<unnamed>' panicked at 'Value always exists'"
+                // require(!obj.tokenWhitelist.get(_approvedTokens[i]), "duplicate approved token");
+
+                // this works (credit: @tshabs)
+                require(!obj.tokenWhitelist.contains(_approvedTokens[i]), "duplicate approved token");
+
+                obj.tokenWhitelist.insert(_approvedTokens[i], true);
+                obj.approvedTokens[i] = _approvedTokens[i];
             }
         }
-*/
+
         obj
+    }
+
+    // GETTER FUNCTIONS
+    pub fn getUserTokenBalance(self, user: Address, token: Address) -> u248 {
+        let (value, found) = self.userTokenBalances.get((user, token));
+        if (found) {
+            value
+        } else {
+            AMOUNT_0
+        }
     }
 }

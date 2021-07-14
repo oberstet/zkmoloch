@@ -29,3 +29,4 @@ pub const N: u8 = 2;
 
 
 pub const AMOUNT_10_18: u248 = 1000000000000000000;
+pub const AMOUNT_0: u248 = 0;
