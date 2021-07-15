@@ -21,6 +21,40 @@ The original contract code is:
 * [Zinc - Troubleshooting](https://zinc.zksync.io/07-smart-contracts/04-troubleshooting.html)
 * [Zinc: porting EVM smart contracts to zkSync ZK rollup](https://www.youtube.com/watch?v=y8LlIlCP5eI)
 
+## Porting Status
+
+1. [ ] ZkMoloch.submitProposal
+1. [ ] ZkMoloch.submitWhitelistProposal
+1. [ ] ZkMoloch.submitGuildKickProposal
+1. [ ] ZkMoloch._submitProposal
+1. [ ] ZkMoloch.sponsorProposal
+1. [ ] ZkMoloch.submitVote
+1. [ ] ZkMoloch.processProposal
+1. [ ] ZkMoloch.processWhitelistProposal
+1. [ ] ZkMoloch.processGuildKickProposal
+1. [ ] ZkMoloch._didPass
+1. [ ] ZkMoloch._validateProposalForProcessing
+1. [ ] ZkMoloch._returnDeposit
+1. [ ] ZkMoloch.ragequit
+1. [ ] ZkMoloch._ragequit
+1. [ ] ZkMoloch.ragekick
+1. [ ] ZkMoloch.withdrawBalance
+1. [ ] ZkMoloch.withdrawBalances
+1. [ ] ZkMoloch._withdrawBalance
+1. [ ] ZkMoloch.cancelProposal
+1. [ ] ZkMoloch.updateDelegateKey
+1. [ ] ZkMoloch.canRagequit
+1. [ ] ZkMoloch.hasVotingPeriodExpired
+1. [ ] ZkMoloch.max
+1. [ ] ZkMoloch.getCurrentPeriod
+1. [ ] ZkMoloch.getProposalQueueLength
+1. [ ] ZkMoloch.getProposalFlags
+1. [ ] ZkMoloch.getUserTokenBalance
+1. [ ] ZkMoloch.getMemberProposalVote
+1. [ ] ZkMoloch.addToBalance
+1. [ ] ZkMoloch.subtractFromBalance
+1. [ ] ZkMoloch.internalTransfer
+1. [ ] ZkMoloch.fairShare
 
 ## Tools
 

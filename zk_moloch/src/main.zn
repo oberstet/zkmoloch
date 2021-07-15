@@ -14,6 +14,7 @@ mod constants;
 use self::constants::N;
 use self::constants::AMOUNT_10_18;
 use self::constants::AMOUNT_0;
+use self::constants::AMOUNT_1;
 
 type Address = u160;
 type AddressPair = (Address, Address);
@@ -21,6 +22,13 @@ type AddressPair = (Address, Address);
 pub const ADDRESS_0: u160 = 0;
 
 type Balance = u248;
+
+enum Vote {
+    Null = 0, // default value, counted as abstention
+    Yes = 1,
+    No = 2
+}
+
 
 struct Member {
     delegateKey: Address,   // the key responsible for submitting proposals and voting - defaults to member address unless updated
@@ -66,11 +74,11 @@ contract ZkMoloch {
     pub proposalDeposit: u248;      // default = 10 ETH (~$1,000 worth of ETH at contract deployment)
     pub dilutionBound: u248;        // default = 3 - maximum multiplier a YES voter will be obligated to pay in case of mass ragequit
     pub processingReward: u248;     // default = 0.1 - amount of ETH to give to whoever processes a proposal
+
+    // FIXME:
     // pub summoningTime: u64;      // needed to determine the current period
 
     pub depositToken: Address;      // deposit token contract reference; default = wETH
-    pub approvedTokens: [Address; N];
-    pub tokenWhitelist: MTreeMap<Address, bool>;
 
     // HARD-CODED LIMITS
     // These numbers are quite arbitrary; they are small enough to avoid overflows when doing calculations
@@ -79,6 +87,10 @@ contract ZkMoloch {
     const MAX_GRACE_PERIOD_LENGTH: u248 = AMOUNT_10_18;         // maximum length of grace period
     const MAX_DILUTION_BOUND: u248 = AMOUNT_10_18;              // maximum dilution bound
     const MAX_NUMBER_OF_SHARES_AND_LOOT: u248 = AMOUNT_10_18;   // maximum number of shares that can be minted
+
+    //
+    // FIXME: add EVENTS
+    //
 
     // INTERNAL ACCOUNTING
     pub proposalCount: u248;    // total proposals submitted
@@ -94,11 +106,21 @@ contract ZkMoloch {
     // this works (credit: @tshabs)
     pub userTokenBalances: MTreeMap<AddressPair, u248>;
 
-    // mapping(address => Member) public members;
-    pub members: MTreeMap<Address, Member>;
+    pub tokenWhitelist: MTreeMap<Address, bool>;
+    pub approvedTokens: [Address; N];
 
-    // mapping(address => address) public memberAddressByDelegateKey;
+    pub proposedToWhitelist: MTreeMap<Address, bool>;
+    pub proposedToKick: MTreeMap<Address, bool>;
+
+    pub members: MTreeMap<Address, Member>;
     pub memberAddressByDelegateKey: MTreeMap<Address, Address>;
+
+    pub proposals: MTreeMap<u248, Proposal>;
+
+    // FIXME:
+    // uint256[] public proposalQueue;
+
+    // FIXME: add MODIFIERs - onlyMember, onlyShareholder, onlyDelegate
 
     pub fn new(_summoner: Address,
                _approvedTokens: [Address; N],
@@ -128,14 +150,17 @@ contract ZkMoloch {
             processingReward: _processingReward,
             // summoningTime: now,
             depositToken: _approvedTokens[0],
-            approvedTokens: _approvedTokens,
-            tokenWhitelist: MTreeMap,
             proposalCount: AMOUNT_0,
             totalShares: AMOUNT_0,
             totalLoot: AMOUNT_0,
             userTokenBalances: MTreeMap,
+            tokenWhitelist: MTreeMap,
+            approvedTokens: _approvedTokens,
+            proposedToWhitelist: MTreeMap,
+            proposedToKick: MTreeMap,
             members: MTreeMap,
             memberAddressByDelegateKey: MTreeMap,
+            proposals: MTreeMap,
         };
 
         for i in 0..N {
@@ -153,16 +178,184 @@ contract ZkMoloch {
             }
         }
 
+        let member = Member {
+            delegateKey: _summoner,
+            shares: AMOUNT_1,
+            loot: AMOUNT_0,
+            exists: true,
+            highestIndexYesVote: AMOUNT_0,
+            jailed: AMOUNT_0,
+        };
+
+        obj.members.insert(_summoner, member);
+        obj.memberAddressByDelegateKey.insert(_summoner, _summoner);
+        obj.totalShares = AMOUNT_1;
+
+        // FIXME:
+        // emit SummonComplete(_summoner, 1);
+
         obj
     }
 
+    //
+    // PROPOSAL FUNCTIONS
+    //
+
+    // FIXME: string memory details
+    // "The string values may exist only in the literal form and can only appear in the dbg and require intrinsic functions"
+
+    // FIXME: nonReentrant
+
+    pub fn submitProposal(mut self,
+                          applicant: Address,
+                          sharesRequested: u248,
+                          lootRequested: u248,
+                          tributeOffered: u248,
+                          tributeToken: Address,
+                          paymentRequested: u248,
+                          paymentToken: Address) -> u248 {
+
+        require(sharesRequested + lootRequested <= Self::MAX_NUMBER_OF_SHARES_AND_LOOT, "too many shares requested");
+        require(self.tokenWhitelist.contains(tributeToken), "tributeToken is not whitelisted");
+        require(self.tokenWhitelist.contains(paymentToken), "paymentToken is not whitelisted");
+        require(applicant != 0, "applicant cannot be 0");
+        require(self.members.contains(applicant), "proposal applicant must be member");
+
+        let (member, found) = self.members.get(applicant);
+        require(member.jailed == 0, "proposal applicant must not be jailed");
+
+        // collect tribute from proposer and store it in the Moloch until the proposal is processed
+        // require(IERC20(tributeToken).transferFrom(msg.sender, address(this), tributeOffered), "tribute token transfer failed");
+        // addToBalance(ESCROW, tributeToken, tributeOffered);
+
+        // bool[6] memory flags; // [sponsored, processed, didPass, cancelled, whitelist, guildkick]
+
+        // _submitProposal(applicant, sharesRequested, lootRequested, tributeOffered, tributeToken, paymentRequested, paymentToken, details, flags);
+
+        // return proposalId - contracts calling submit might want it
+        self.proposalCount - 1
+    }
+
+    // FIXME: add "string memory details, bool[6] memory flags"
+    fn _submitProposal(mut self,
+                       applicant: Address,
+                       sharesRequested: u248,
+                       lootRequested: u248,
+                       tributeOffered: u248,
+                       tributeToken: Address,
+                       paymentRequested: u248,
+                       paymentToken: Address) {
+
+        let proposal: Proposal = Proposal {
+            applicant : applicant,
+            proposer : zksync::msg.sender,
+            sponsor : ADDRESS_0,
+            sharesRequested : sharesRequested,
+            lootRequested : lootRequested,
+            tributeOffered : tributeOffered,
+            tributeToken : tributeToken,
+            paymentRequested : paymentRequested,
+            paymentToken : paymentToken,
+            startingPeriod : AMOUNT_0,
+            yesVotes : AMOUNT_0,
+            noVotes : AMOUNT_0,
+            // flags : flags,
+            // details : details,
+            maxTotalSharesAndLootAtYesVote : AMOUNT_0
+        };
+
+        self.proposals.insert(self.proposalCount, proposal);
+        let (memberAddress, memberFound) = self.memberAddressByDelegateKey.get(zksync::msg.sender);
+        require(memberFound, "member for calling delegate not found");
+
+        // FIXME: emit event
+        // emit SubmitProposal(proposalCount, msg.sender, memberAddress, applicant, sharesRequested, lootRequested, tributeOffered, tributeToken, paymentRequested, paymentToken);
+
+        self.proposalCount += AMOUNT_1;
+    }
+
+    //
     // GETTER FUNCTIONS
+    //
+
+    fn max(x: u248, y: u248) -> u248 {
+        if (x >= y) {
+            x
+        } else {
+            y
+        }
+    }
+
+    pub fn getCurrentPeriod() -> u248 {
+        // FIXME: return block.timestamp / now
+        AMOUNT_0
+    }
+
+    pub fn getProposalQueueLength() -> u248 {
+        // FIXME: return proposalQueue length
+        AMOUNT_0
+    }
+
+    // FIXME: flags should have type bool[6]
+    pub fn getProposalFlags(proposalId: u248) -> bool {
+        false
+    }
+
     pub fn getUserTokenBalance(self, user: Address, token: Address) -> u248 {
         let (value, found) = self.userTokenBalances.get((user, token));
         if (found) {
             value
         } else {
             AMOUNT_0
+        }
+    }
+
+    pub fn getMemberProposalVote() -> Vote {
+        // FIXME
+        let vote = Vote;
+        vote
+    }
+
+    //
+    // HELPER FUNCTIONS
+    //
+
+    fn addToBalance(mut self, user: Address, token: Address, amount: u248) {
+        let (value, found) = self.userTokenBalances.get((user, token));
+        if (found) {
+            self.userTokenBalances.insert((user, token), value + amount);
+        } else {
+            self.userTokenBalances.insert((user, token), amount);
+        }
+    }
+
+    fn subtractFromBalance(mut self, user: Address, token: Address, amount: u248) {
+        let (value, found) = self.userTokenBalances.get((user, token));
+        require(found, "user/token not found");
+        if (value > amount) {
+            self.userTokenBalances.insert((user, token), value + amount);
+        } else {
+            self.userTokenBalances.insert((user, token), AMOUNT_0);
+        }
+    }
+
+    fn internalTransfer(mut self, from: Address, to: Address, token: Address, amount: u248) {
+        self.subtractFromBalance(from, token, amount);
+        self.addToBalance(to, token, amount);
+    }
+
+    fn fairShare(balance: u248, shares: u248, totalShares: u248) -> u248 {
+        require(totalShares != 0);
+
+        if (balance == 0) {
+            AMOUNT_0
+        } else {
+            let prod = balance * shares;
+            if (prod / balance == shares) { // no overflow in multiplication above?
+                prod / totalShares
+            } else {
+                (balance / totalShares) * shares
+            }
         }
     }
 }
