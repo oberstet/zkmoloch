@@ -67,7 +67,10 @@ struct Proposal {
 
 
 contract ZkMoloch {
+    //
     // GLOBAL CONSTANTS
+    //
+
     pub periodDuration: u248;       // default = 17280 = 4.8 hours in seconds (5 periods per day)
     pub votingPeriodLength: u248;   // default = 35 periods (7 days)
     pub gracePeriodLength: u248;    // default = 35 periods (7 days)
@@ -92,7 +95,10 @@ contract ZkMoloch {
     // FIXME: add EVENTS
     //
 
+    //
     // INTERNAL ACCOUNTING
+    //
+
     pub proposalCount: u248;    // total proposals submitted
     pub totalShares: u248;      // total shares across all members
     pub totalLoot: u248;        // total loot across all members
@@ -138,6 +144,7 @@ contract ZkMoloch {
         require(_gracePeriodLength <= Self::MAX_GRACE_PERIOD_LENGTH, "_gracePeriodLength exceeds limit");
         require(_dilutionBound > 0, "_dilutionBound cannot be 0");
         require(_dilutionBound <= Self::MAX_DILUTION_BOUND, "_dilutionBound exceeds limit");
+        // FIXME
         // require(_approvedTokens.length > 0, "need at least one approved token");
         require(_proposalDeposit >= _processingReward, "_proposalDeposit cannot be smaller than _processingReward");
 
@@ -236,6 +243,16 @@ contract ZkMoloch {
         self.proposalCount - 1
     }
 
+    // FIXME: add "string memory details"
+    pub fn submitWhitelistProposal(tokenToWhitelist: Address) -> u248 {
+        AMOUNT_0
+    }
+
+    // FIXME: add "string memory details"
+    pub fn submitGuildKickProposal(memberToKick: Address) -> u248 {
+        AMOUNT_0
+    }
+
     // FIXME: add "string memory details, bool[6] memory flags"
     fn _submitProposal(mut self,
                        applicant: Address,
@@ -273,6 +290,25 @@ contract ZkMoloch {
 
         self.proposalCount += AMOUNT_1;
     }
+
+    // ZkMoloch.sponsorProposal
+    // ZkMoloch.submitVote
+    // ZkMoloch.processProposal
+    // ZkMoloch.processWhitelistProposal
+    // ZkMoloch.processGuildKickProposal
+    // ZkMoloch._didPass
+    // ZkMoloch._validateProposalForProcessing
+    // ZkMoloch._returnDeposit
+    // ZkMoloch.ragequit
+    // ZkMoloch._ragequit
+    // ZkMoloch.ragekick
+    // ZkMoloch.withdrawBalance
+    // ZkMoloch.withdrawBalances
+    // ZkMoloch._withdrawBalance
+    // ZkMoloch.cancelProposal
+    // ZkMoloch.updateDelegateKey
+    // ZkMoloch.canRagequit
+    // ZkMoloch.hasVotingPeriodExpired
 
     //
     // GETTER FUNCTIONS
@@ -330,13 +366,10 @@ contract ZkMoloch {
     }
 
     fn subtractFromBalance(mut self, user: Address, token: Address, amount: u248) {
-        let (value, found) = self.userTokenBalances.get((user, token));
+        let (balance, found) = self.userTokenBalances.get((user, token));
         require(found, "user/token not found");
-        if (value > amount) {
-            self.userTokenBalances.insert((user, token), value + amount);
-        } else {
-            self.userTokenBalances.insert((user, token), AMOUNT_0);
-        }
+        require(balance >= amount, "insufficient balance");
+        self.userTokenBalances.insert((user, token), balance - amount);
     }
 
     fn internalTransfer(mut self, from: Address, to: Address, token: Address, amount: u248) {

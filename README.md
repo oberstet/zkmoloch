@@ -23,10 +23,10 @@ The original contract code is:
 
 ## Porting Status
 
-1. [ ] ZkMoloch.submitProposal
+1. [x] ZkMoloch.submitProposal
 1. [ ] ZkMoloch.submitWhitelistProposal
 1. [ ] ZkMoloch.submitGuildKickProposal
-1. [ ] ZkMoloch._submitProposal
+1. [x] ZkMoloch._submitProposal
 1. [ ] ZkMoloch.sponsorProposal
 1. [ ] ZkMoloch.submitVote
 1. [ ] ZkMoloch.processProposal
@@ -45,16 +45,22 @@ The original contract code is:
 1. [ ] ZkMoloch.updateDelegateKey
 1. [ ] ZkMoloch.canRagequit
 1. [ ] ZkMoloch.hasVotingPeriodExpired
-1. [ ] ZkMoloch.max
+1. [x] ZkMoloch.max
 1. [ ] ZkMoloch.getCurrentPeriod
 1. [ ] ZkMoloch.getProposalQueueLength
 1. [ ] ZkMoloch.getProposalFlags
-1. [ ] ZkMoloch.getUserTokenBalance
+1. [x] ZkMoloch.getUserTokenBalance
 1. [ ] ZkMoloch.getMemberProposalVote
-1. [ ] ZkMoloch.addToBalance
-1. [ ] ZkMoloch.subtractFromBalance
-1. [ ] ZkMoloch.internalTransfer
-1. [ ] ZkMoloch.fairShare
+1. [x] ZkMoloch.addToBalance
+1. [x] ZkMoloch.subtractFromBalance
+1. [x] ZkMoloch.internalTransfer
+1. [x] ZkMoloch.fairShare
+
+## Open Issues
+
+1. [ ] block.timestamp / now
+1. [ ] Events
+1. [ ] Modifiers
 
 ## Tools
 
