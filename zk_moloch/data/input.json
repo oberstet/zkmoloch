@@ -15,7 +15,14 @@
   },
   "arguments": {
     "new": {
-      "value": "0"
+      "_summoner": "0xf766Dc789CF04CD18aE75af2c5fAf2DA6650Ff57",
+      "_approvedTokens": ["0x2e055eee18284513b993db7568a592679ab13188", "0x0000000000000000000000000000000000000000"],
+      "_periodDuration": "17280",
+      "_votingPeriodLength": "35",
+      "_gracePeriodLength": "35",
+      "_proposalDeposit": "10",
+      "_dilutionBound": "3",
+      "_processingReward": "1"
     }
   }
 }
