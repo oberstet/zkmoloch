@@ -20,6 +20,8 @@ The original contract code is:
 * [Zinc - Minimal example](https://zinc.zksync.io/07-smart-contracts/02-minimal-example.html)
 * [Zinc - Troubleshooting](https://zinc.zksync.io/07-smart-contracts/04-troubleshooting.html)
 * [Zinc: porting EVM smart contracts to zkSync ZK rollup](https://www.youtube.com/watch?v=y8LlIlCP5eI)
+* [zkSync: Rinkeby](https://rinkeby.zksync.io/account)
+* [zkScan: Rinkeby](https://rinkeby.zkscan.io/)
 
 ## Porting Status
 
